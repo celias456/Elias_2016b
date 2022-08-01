@@ -1,0 +1,65 @@
+function [B] = numderiv(estimates,tol,sT,EM,deepparameters)
+%Calculates Numrical derivatives of the simulated moments
+%Numerical derivatives are calculated using a two-point estimation method
+
+%Input
+% estimates 4x1 vector of msm estimates
+%   estimates(1) = mu: degree of agent heterogeneity
+%   estimates(2) = eshock_std: standard deviation of expectation shock
+%   estimates(3) = eshock_ro; AR(1) coefficient of expectation shock
+%   estimates(4) = gain: learning gain
+% tol: tolerance of two-point numerical derivative calculation
+% sT: total number of time periods in msm estimation
+% EM: empirical moments in msm estimation
+%   EM(1) = exchange rate return standard deviation
+%   EM(2) = exchange rate return first-order autocorrelation
+%   EM(3) = deviation from fundamentals standard deviation
+%   EM(4) = deviation from fundamentals first-order autocorrelation
+% deepparameters: 4x1 vector of deep model parameters
+%   deepparameters(1) = alpha; fundamentals constant
+%   deepparameters(2) = delta; fundametals parameter on time
+%   deepparameters(3) = rho_f; fundamentals parameter on lagged fundamental
+%   deepparameters(4) = sigma_epsilon; fundamentals wn standard deviation
+
+%Output
+% B: 4x4 matrix of partial derivatives; row represents the moment and
+% column represents parameter
+% -------------------------------------------------------------------------
+
+mu = estimates(1);
+eshock_std = estimates(2);
+eshock_ro = estimates(3);
+gain = estimates(4);
+
+B = zeros(4,4);
+
+all = g_st([mu,eshock_std,eshock_ro,gain],sT,EM,deepparameters);
+
+%B is a 4x4 matrix where the row represents the moment and the column
+%represents the parameter
+
+%Calculate numerical derivatives for mu
+mu_ub_all = g_st([mu+tol,eshock_std,eshock_ro,gain],sT,EM,deepparameters);
+for count = 1:4
+    B(count,1) = (mu_ub_all(count)-all(count))/(tol);
+end
+
+%Calculate numerical derivatives for eshock_std
+eshock_std_ub_all = g_st([mu,eshock_std+tol,eshock_ro,gain],sT,EM,deepparameters);
+for count = 1:4
+    B(count,2) = (eshock_std_ub_all(count)-all(count))/(tol);
+end
+
+%Calculate numerical derivatives for eshock_ro
+eshock_ro_ub_all = g_st([mu,eshock_std,eshock_ro+tol,gain],sT,EM,deepparameters);
+for count = 1:4
+    B(count,3) = (eshock_ro_ub_all(count)-all(count))/(tol);
+end
+
+%Calculate numerical derivatives for gain
+gain_ub_all = g_st([mu,eshock_std,eshock_ro,gain+tol],sT,EM,deepparameters);
+for count = 1:4
+    B(count,4) = (gain_ub_all(count)-all(count))/(tol);
+end
+
+end
